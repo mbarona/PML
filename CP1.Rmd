@@ -1,0 +1,112 @@
+---
+title: "JHU Practical Machine Learning - Course Project"
+author: "mb"
+date: "July 26, 2015"
+output: html_document
+---
+##BACKGROUND
+
+##DATA
+
+
+Upon initial examination of the training data, based on the structure and summar there are several variables with missing values.
+```{r, results='hide'}
+training = read.csv("pml-training.csv")
+str(training)
+summary(training)
+```
+
+To address this, both the training and testing data will be loaded into R - adding a special string of characters that represent the missing entries using the na.strings option. 
+
+All variables with missing values shall be omitted. 
+```{r}
+#loading data
+training = read.csv("pml-training.csv", na.strings = c("NA","#DIV/0!",""))
+testing = read.csv("pml-testing.csv", na.strings = c("NA","#DIV/0!",""))
+
+
+#identifying variables without missing values
+cols = colSums(is.na(training))
+cols_nmv <- which(cols==0)
+
+#create new DF containing variables with complete entries
+training2 = training[,cols_nmv]
+training2 = training[,c(-4:-1)]
+testing2 = testing[,cols_nmv]
+testing2 = testing[,c(-4:-1)]
+dim(training2); dim(testing2)
+```
+
+## CROSS-VALIDATION
+```{r}
+set.seed(807)
+inTrain = createDataPartition(y=training3$classe, p = 0.6, list = FALSE)
+subTrain = training3[inTrain,]
+subTest = training3[-inTrain,]
+dim(subTrain)
+dim(subTest)
+```
+
+## PRE-PROCESSING
+
+## PREDICTION MODEL
+Using 'rpart' or trees.
+```{r}
+set.seed(807)
+mod1 = train(classe ~ ., method = "rpart", data = subTrain)
+mod1
+mod1$finalModel
+prp(mod1$finalModel)
+pred1 = predict(mod1, subTest)
+confusionMatrix(pred1, subTest$classe)
+
+```
+
+Using 'rf' or random forest.
+```{r, eval=FALSE}
+set.seed(807)
+library(randomForest)
+mod2 = train(classe ~ ., method = "rf", data = subTrain)
+mod2
+mod2$finalModel
+pred2 = predict(mod2, subTest)
+confusionMatrix(pred2, subTest$classe)
+```
+
+
+## CONCLUSION
+We choose the random forest model over the tree model as it has much higher accuracy.
+
+Applying the random forest prediction model to the testing set.
+```{r}
+pred3 = predict(mod2, testing)
+pred3
+
+```
+
+
+## SUBMISSION
+```{r}
+answers = pred3
+pml_write_files = function(x){
+n = length(x)
+for(i in 1:n){
+filename = paste0("problem_id_",i,".txt")
+write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+}
+}
+
+pml_write_files(answers)
+
+```
+
+
+
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
