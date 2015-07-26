@@ -113,7 +113,7 @@ Accuracy is at 0.569. Not sufficient enough to give us confidence on our predict
 
 ### Second Algorithm used: 'rf' or Random Forest.
 
-```{r, eval=FALSE}
+```{r}
 set.seed(807)
 
 #load random forest package
@@ -124,8 +124,8 @@ predictors = names(cols_nmv[c(-5:-3,-1,-60)])
 decision = names(cols_nmv[60])
 
 #building model using the subTrain data
-#mod2 = train(classe ~ ., method = "rf", data = subTrain)
-mod2 = randomForest(subTrain[,predictors], subTrain[,decision])
+mod2 = train(classe ~ ., method = "rf", data = subTrain)
+#mod2 = randomForest(subTrain[,predictors], subTrain[,decision])
 
 #results
 mod2
@@ -146,7 +146,7 @@ Chose the random forest model as it performed better (with 0.9976 accuracy) than
 Applying the random forest prediction model to the testing set.
 ```{r}
 #applying the mod2 (random forest model) on our testing set 
-pred3 = predict(mod2, testing)
+pred3 = predict(mod2, testing2)
 pred3
 
 ```
