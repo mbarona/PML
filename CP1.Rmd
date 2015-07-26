@@ -4,13 +4,33 @@ author: "mb"
 date: "July 26, 2015"
 output: html_document
 ---
+
 ##BACKGROUND
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
 
 ##DATA
+The training data for this project are available here: 
 
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
 
+The test data are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har.
+
+##OBJECTIVES
+The goal of the project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. 
+
+- create a report describing how you built your model
+- how you used cross validation
+- what you think the expected out of sample error is
+- why you made the choices you did. You will also use your prediction model to predict 20 different test cases. 
+
+## I. LOADING AND CLEANING THE DATA
 Upon initial examination of the training data, based on the structure and summar there are several variables with missing values.
 ```{r, results='hide'}
+#.csv files are stored in the working directory
 training = read.csv("pml-training.csv")
 str(training)
 summary(training)
@@ -32,16 +52,16 @@ cols_nmv <- which(cols==0)
 #create new data frames containing variables with complete entries
 #removing irrelevant variables
 training2 = training[,cols_nmv]
-training2 = training[,c(-4:-1)]
+training2 = training2[,c(-5:-3,-1)]
 testing2 = testing[,cols_nmv]
-testing2 = testing[,c(-4:-1)]
+testing2 = testing2[,c(-5:-3,-1)]
 
 #check dimensions of the data and take a look of the new dataset
 dim(training2); dim(testing2)
 head(training2); head(testing2)
 ```
 
-## CROSS-VALIDATION
+## II. CROSS-VALIDATION
 Using the Caret package, partitioning the training dataset for cross-validation.
 
 Splitting the training dataset into 60% for subTrain and 40% for subTest.
@@ -52,16 +72,16 @@ SubTrain and SubTest datasets both contain 56 variables with 11776 and 7846 obse
 library(caret)
 
 set.seed(807)
-inTrain = createDataPartition(y=training3$classe, p = 0.6, list = FALSE)
-subTrain = training3[inTrain,]
-subTest = training3[-inTrain,]
+inTrain = createDataPartition(y=training2$classe, p = 0.6, list = FALSE)
+subTrain = training2[inTrain,]
+subTest = training2[-inTrain,]
 
 
 dim(subTrain); dim(subTest)
 ```
 
 
-## PREDICTION MODEL
+## III. PREDICTION MODEL
 Building of prediction models.
 
 ### First algorithm used: 'rpart' or Decision tree. 
@@ -70,6 +90,7 @@ set.seed(807)
 #loading rpart packages
 library(rpart)
 library(rpart.plot)
+library(caret)
 
 #building the model using the subTrain data
 mod1 = train(classe ~ ., method = "rpart", data = subTrain)
@@ -90,7 +111,7 @@ Accuracy is at 0.569. Not sufficient enough to give us confidence on our predict
 
 
 
-### Second Algorithm using 'rf' or Random Forest.
+### Second Algorithm used: 'rf' or Random Forest.
 
 ```{r, eval=FALSE}
 set.seed(807)
@@ -98,8 +119,13 @@ set.seed(807)
 #load random forest package
 library(randomForest)
 
+#predictors
+predictors = names(cols_nmv[c(-5:-3,-1,-60)])
+decision = names(cols_nmv[60])
+
 #building model using the subTrain data
-mod2 = train(classe ~ ., method = "rf", data = subTrain)
+#mod2 = train(classe ~ ., method = "rf", data = subTrain)
+mod2 = randomForest(subTrain[,predictors], subTrain[,decision])
 
 #results
 mod2
@@ -113,8 +139,8 @@ confusionMatrix(pred2, subTest$classe)
 ```
 The random forest model produced accuracy of 0.9976. 
 
-## CONCLUSION
-Chose the random forest model as it performed better (with 0.9976 accuracy) than that of the decision tree model (0.569). The expected out-of-sample error is at 0.0024 or 0.24%. 
+## DECISION
+Chose the random forest model as it performed better (with 0.9976 accuracy) than that of the decision tree model (0.569). The expected out-of-sample error is at 0.0024 or 0.24%.
 
 
 Applying the random forest prediction model to the testing set.
@@ -144,13 +170,3 @@ pml_write_files(answers)
 
 ```
 
-
-
-
-You can also embed plots, for example:
-
-```{r, echo=FALSE}
-plot(cars)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
