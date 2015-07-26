@@ -29,56 +29,97 @@ testing = read.csv("pml-testing.csv", na.strings = c("NA","#DIV/0!",""))
 cols = colSums(is.na(training))
 cols_nmv <- which(cols==0)
 
-#create new DF containing variables with complete entries
+#create new data frames containing variables with complete entries
+#removing irrelevant variables
 training2 = training[,cols_nmv]
 training2 = training[,c(-4:-1)]
 testing2 = testing[,cols_nmv]
 testing2 = testing[,c(-4:-1)]
+
+#check dimensions of the data and take a look of the new dataset
 dim(training2); dim(testing2)
+head(training2); head(testing2)
 ```
 
 ## CROSS-VALIDATION
+Using the Caret package, partitioning the training dataset for cross-validation.
+
+Splitting the training dataset into 60% for subTrain and 40% for subTest.
+
+SubTrain and SubTest datasets both contain 56 variables with 11776 and 7846 observations, respectively.
+
 ```{r}
+library(caret)
+
 set.seed(807)
 inTrain = createDataPartition(y=training3$classe, p = 0.6, list = FALSE)
 subTrain = training3[inTrain,]
 subTest = training3[-inTrain,]
-dim(subTrain)
-dim(subTest)
+
+
+dim(subTrain); dim(subTest)
 ```
 
-## PRE-PROCESSING
 
 ## PREDICTION MODEL
-Using 'rpart' or trees.
+Building of prediction models.
+
+### First algorithm used: 'rpart' or Decision tree. 
 ```{r}
 set.seed(807)
+#loading rpart packages
+library(rpart)
+library(rpart.plot)
+
+#building the model using the subTrain data
 mod1 = train(classe ~ ., method = "rpart", data = subTrain)
+#results
 mod1
 mod1$finalModel
+#simple plot
 prp(mod1$finalModel)
+
+#running predictions using the mod1 on subTest data  
 pred1 = predict(mod1, subTest)
+
+#confusion matrix for evaluation of the model
 confusionMatrix(pred1, subTest$classe)
 
 ```
+Accuracy is at 0.569. Not sufficient enough to give us confidence on our prediction model, thus we'll further explore using other algorith such as Random Forest.
 
-Using 'rf' or random forest.
+
+
+### Second Algorithm using 'rf' or Random Forest.
+
 ```{r, eval=FALSE}
 set.seed(807)
+
+#load random forest package
 library(randomForest)
+
+#building model using the subTrain data
 mod2 = train(classe ~ ., method = "rf", data = subTrain)
+
+#results
 mod2
 mod2$finalModel
+
+#running predictions using mod2 on subTest data
 pred2 = predict(mod2, subTest)
+
+#model evaluation
 confusionMatrix(pred2, subTest$classe)
 ```
-
+The random forest model produced accuracy of 0.9976. 
 
 ## CONCLUSION
-We choose the random forest model over the tree model as it has much higher accuracy.
+Chose the random forest model as it performed better (with 0.9976 accuracy) than that of the decision tree model (0.569). The expected out-of-sample error is at 0.0024 or 0.24%. 
+
 
 Applying the random forest prediction model to the testing set.
 ```{r}
+#applying the mod2 (random forest model) on our testing set 
 pred3 = predict(mod2, testing)
 pred3
 
@@ -87,7 +128,10 @@ pred3
 
 ## SUBMISSION
 ```{r}
+#storing predictions to 'answers' variable
 answers = pred3
+
+#writing answers to text document
 pml_write_files = function(x){
 n = length(x)
 for(i in 1:n){
